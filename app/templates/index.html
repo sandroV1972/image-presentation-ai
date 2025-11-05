@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Image Presentation AI</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <h1>Carica immagini</h1>
+  <form action="/upload" method="POST" enctype="multipart/form-data">
+    <input type="file" name="images" multiple required>
+    <button type="submit">Carica</button>
+  </form>
+</body>
+</html>

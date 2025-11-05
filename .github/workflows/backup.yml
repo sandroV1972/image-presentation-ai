@@ -1,0 +1,49 @@
+name: Automated Backup
+
+on:
+  schedule:
+    # Esegui backup ogni giorno alle 02:00 UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    name: Backup Data and Logs
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Backup server data
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            # Crea directory backup se non esiste
+            mkdir -p /home/backup/image-presentation-ai
+            
+            # Timestamp per il backup
+            TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+            
+            # Backup dei dati
+            cd ${{ secrets.DEPLOY_PATH || '/home/deploy/image-presentation-ai' }}
+            tar -czf /home/backup/image-presentation-ai/data_${TIMESTAMP}.tar.gz data/
+            
+            # Backup dei log
+            docker compose logs > /home/backup/image-presentation-ai/logs_${TIMESTAMP}.txt
+            
+            # Rimuovi backup più vecchi di 30 giorni
+            find /home/backup/image-presentation-ai -type f -mtime +30 -delete
+            
+            echo "Backup completato: ${TIMESTAMP}"
+
+      - name: Notify backup status
+        if: always()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            🗄️ Backup Image Presentation AI
+            Status: ${{ job.status }}
+            Date: $(date)
